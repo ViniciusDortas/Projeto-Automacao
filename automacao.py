@@ -34,7 +34,7 @@ def carregar_dados(vendas, emails, lojas):
     )
     df_emails_lojas["ID Loja"] = df_emails_lojas["ID Loja"].astype("Int64")
 
-    return df_vendas, df_emails_lojas
+    return df_vendas, df_lojas, df_emails_lojas
 
 
 def calcular_faturamento(df):
@@ -103,6 +103,15 @@ def verificar_meta(df, valor, meta):
     return df
 
 
+def aplicar_metas(lista_dfs):
+    dfs_novos = [
+        verificar_meta(df, valor, meta)
+        for df, valor, meta in lista_dfs
+    ]
+
+    return dfs_novos
+
+
 def data_atual(df):
 
     total_lojas = df["ID Loja"].nunique()
@@ -120,30 +129,133 @@ def data_atual(df):
     return data_mais_recente, ano_atual
 
 
-def filtrar_data_dfs(df, coluna, data):
+def filtro_data(df, coluna, data):
     return df[df[coluna] == data]
+
+
+def filtrar_data_dfs(df_fat, df_var, df_ticket, coluna, data):
+
+    lista_dfs_dia = (
+        df_fat,
+        df_var,
+        df_ticket,
+    )
+
+    return [
+        filtro_data(df, coluna, data).set_index("ID Loja")
+        for df in lista_dfs_dia
+    ]
 
 
 def loc_onepage(df, id_loja, coluna):
     if id_loja in df.index:
         return df.at[id_loja, coluna]
     return 0
+
+
+def gerar_onepage_loja(
+    id_loja,
+    faturamento_dia_fil,
+    variedade_dia_fil,
+    ticket_dia_fil,
+    faturamento_ano_fil,
+    variedade_ano_fil,
+    ticket_ano_fil,
+):
+    
+    onepage_dia = pd.DataFrame({
+    "Indicador": [
+        "Faturamento",
+        "Variedade",
+        "Ticket Medio"
+    ],
+    "Valor Dia": [
+        loc_onepage(faturamento_dia_fil, id_loja, "Faturamento Diario"),
+        loc_onepage(variedade_dia_fil, id_loja, "Variedade Diaria"),
+        loc_onepage(ticket_dia_fil, id_loja, "Ticket Medio Dia")
+    ],
+    "Meta Dia": [
+        FAT_META_DIA,
+        VAR_META_DIA,
+        TICKET_META
+    ],
+    "Cenário Dia": [
+        loc_onepage(faturamento_dia_fil, id_loja, "Bateu Meta"),
+        loc_onepage(variedade_dia_fil, id_loja, "Bateu Meta"),
+        loc_onepage(ticket_dia_fil, id_loja, "Bateu Meta")
+    ]       
+    }).set_index("Indicador")
+
+    onepage_ano = pd.DataFrame({
+    "Indicador": [
+        "Faturamento",
+        "Variedade",
+        "Ticket Medio"
+    ],
+    "Valor Ano": [
+        loc_onepage(faturamento_ano_fil, id_loja, "Faturamento Anual"),
+        loc_onepage(variedade_ano_fil, id_loja, "Variedade Anual"),
+        loc_onepage(ticket_ano_fil, id_loja, "Ticket Medio Ano")
+    ],
+    "Meta Ano": [
+        FAT_META_ANO,
+        VAR_META_ANO,
+        TICKET_META
+    ],
+    "Cenário Ano": [
+        loc_onepage(faturamento_ano_fil, id_loja, "Bateu Meta"),
+        loc_onepage(variedade_ano_fil, id_loja, "Bateu Meta"),
+        loc_onepage(ticket_ano_fil, id_loja, "Bateu Meta")
+    ]       
+    }).set_index("Indicador")
+
+    return onepage_dia, onepage_ano
+
+
+def gerar_ranking(df, coluna, df_lojas):
+    df = df.copy()
+
+    df = df.sort_values(by=coluna, ascending=False)
+
+    mapa_lojas = df_lojas.set_index("ID Loja")["Loja"]
+
+    df["Loja"] = df.index.map(mapa_lojas)
+
+    df["Ranking"] = range(1, len(df) + 1)
+
+    df = df[["Ranking", "Loja", coluna]]
+
+    return df
+
+
+def gerar_relatorios(metricas, df_lojas):
+
+    relatorios = {}
+
+    for coluna, df in metricas.items():
+        relatorios[coluna] = gerar_ranking(df, coluna, df_lojas)  
+    
+    return relatorios
     
 # ========
 # MAIN
 # ========
 
 def main():
-    df_vendas, df_emails_lojas = carregar_dados(
+    df_vendas, df_lojas, df_emails_lojas = carregar_dados(
         ARQUIVO_VENDAS,
         ARQUIVO_EMAILS,
         ARQUIVO_LOJAS
     )
 
+    # ===== CALCULANDO INDICADORES =====
+
     faturamento_dia, faturamento_ano = calcular_faturamento(df_vendas)
     variedade_itens_dia, variedade_itens_ano = calcular_variedade(df_vendas)
     ticket_medio_dia, ticket_medio_ano = calcular_ticket_medio(df_vendas)
     
+    # ===== APLICANDO AS METAS =====
+
     lista_dfs = [
         (faturamento_dia, "Faturamento Diario", FAT_META_DIA),
         (faturamento_ano, "Faturamento Anual", FAT_META_ANO),
@@ -153,11 +265,6 @@ def main():
         (ticket_medio_ano, "Ticket Medio Ano", TICKET_META)
     ]
 
-    dfs_novos = [
-        verificar_meta(df, valor, meta)
-        for df, valor, meta in lista_dfs
-    ]
-
     (
         faturamento_dia,
         faturamento_ano,
@@ -165,140 +272,64 @@ def main():
         variedade_itens_ano,
         ticket_medio_dia,
         ticket_medio_ano
-    ) = dfs_novos
+    ) = aplicar_metas(lista_dfs)
+
+    # ===== FILTRANDOS DFS PELA DATA =====
 
     data_mais_recente, ano_atual = data_atual(df_vendas)
-
-    lista_dfs_dia = (
-        faturamento_dia,
-        variedade_itens_dia,
-        ticket_medio_dia,
-    )
-
-    dfs_filtrados_dia = [
-        filtrar_data_dfs(df, "Data", data_mais_recente).set_index("ID Loja")
-        for df in lista_dfs_dia
-    ]
 
     (
         faturamento_dia_fil,
         variedade_dia_fil,
         ticket_dia_fil,
-    ) = dfs_filtrados_dia
-
-
-    lista_dfs_ano = (
-        faturamento_ano,
-        variedade_itens_ano,
-        ticket_medio_ano
-    )
-
-    dfs_filtrados_ano = [
-        filtrar_data_dfs(df, "Ano", ano_atual).set_index("ID Loja")
-        for df in lista_dfs_ano
-    ]
+    ) = filtrar_data_dfs(
+        faturamento_dia,
+        variedade_itens_dia,
+        ticket_medio_dia,
+        "Data",
+        data_mais_recente
+        )
 
     (
         faturamento_ano_fil,
         variedade_ano_fil,
         ticket_ano_fil,
-    ) = dfs_filtrados_ano
+    ) = filtrar_data_dfs(
+        faturamento_ano,
+        variedade_itens_ano,
+        ticket_medio_ano,
+        "Ano",
+        ano_atual
+    )
 
+    # ===== CRIANDO OS ONEPAGES =====
+
+    onepages = {}
 
     for id_loja in df_emails_lojas["ID Loja"].dropna().unique():
-        onepage_dia = pd.DataFrame({
-            "Indicador": [
-                "Faturamento",
-                "Variedade",
-                "Ticket Medio"
-            ],
-            "Valor Dia": [
-                loc_onepage(
-                    faturamento_dia_fil,
-                    id_loja,
-                    "Faturamento Diario",
-                ),
-                loc_onepage(
-                    variedade_dia_fil,
-                    id_loja,
-                    "Variedade Diaria",
-                ),
-                loc_onepage(
-                    ticket_dia_fil,
-                    id_loja,
-                    "Ticket Medio Dia",
-                )
-            ],
-            "Meta Dia": [
-                FAT_META_DIA,
-                VAR_META_DIA,
-                TICKET_META
-            ],
-            "Cenário Dia": [
-                loc_onepage(
-                    faturamento_dia_fil,
-                    id_loja,
-                    "Bateu Meta",
-                ),
-                loc_onepage(
-                    variedade_dia_fil,
-                    id_loja,
-                    "Bateu Meta",
-                ),
-                loc_onepage(
-                    ticket_dia_fil,
-                    id_loja,
-                    "Bateu Meta",
-                )
-            ]       
-        }).set_index("Indicador")
+        
+        onepages[id_loja] = gerar_onepage_loja(
+            id_loja,
+            faturamento_dia_fil,
+            variedade_dia_fil,
+            ticket_dia_fil,
+            faturamento_ano_fil,
+            variedade_ano_fil,
+            ticket_ano_fil
+        )
 
-        onepage_ano = pd.DataFrame({
-            "Indicador": [
-                "Faturamento",
-                "Variedade",
-                "Ticket Medio"
-            ],
-            "Valor Ano": [
-                loc_onepage(
-                    faturamento_ano_fil,
-                    id_loja,
-                    "Faturamento Anual",
-                ),
-                loc_onepage(
-                    variedade_ano_fil,
-                    id_loja,
-                    "Variedade Anual",
-                ),
-                loc_onepage(
-                    ticket_ano_fil,
-                    id_loja,
-                    "Ticket Medio Ano",
-                )
-            ],
-            "Meta Ano": [
-                FAT_META_ANO,
-                VAR_META_ANO,
-                TICKET_META
-            ],
-            "Cenário Ano": [
-                loc_onepage(
-                    faturamento_ano_fil,
-                    id_loja,
-                    "Bateu Meta",
-                ),
-                loc_onepage(
-                    variedade_ano_fil,
-                    id_loja,
-                    "Bateu Meta",
-                ),
-                loc_onepage(
-                    ticket_ano_fil,
-                    id_loja,
-                    "Bateu Meta",
-                )
-            ]       
-        }).set_index("Indicador")
+    # ===== CRIANDO OS RELATORIOS =====
+
+    metricas = {
+        "Faturamento Diario": faturamento_dia_fil,
+        "Variedade Diaria": variedade_dia_fil,
+        "Ticket Medio Dia": ticket_dia_fil,
+        "Faturamento Anual": faturamento_ano_fil,
+        "Variedade Anual": variedade_ano_fil,
+        "Ticket Medio Ano": ticket_ano_fil
+    }
+
+    relatorios = gerar_relatorios(metricas, df_lojas)
 
     print("Processamento concluído")
 
