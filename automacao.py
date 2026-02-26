@@ -333,7 +333,7 @@ def gerar_html_relatorios(relatorios, data):
         <br><br>
         """
 
-    data = data.strftime("%d-%m-%Y")
+    data = data.strftime("%d/%m/%Y")
         
     corpo_html = f"""
     <html>
