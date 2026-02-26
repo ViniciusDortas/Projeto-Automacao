@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import os
 
 # ============
 # CONSTANTES
@@ -209,7 +210,80 @@ def gerar_onepage_loja(
     ]       
     }).set_index("Indicador")
 
-    return onepage_dia, onepage_ano
+
+    def bolinha(valor):
+        if valor == "Sim":
+            return '<span class="verde"></span>'
+        else:
+            return '<span class="vermelha"></span>'
+        
+    onepage_dia["Cenário Dia"] = onepage_dia["Cenário Dia"].apply(bolinha)
+    onepage_ano["Cenário Ano"] = onepage_ano["Cenário Ano"].apply(bolinha)
+
+ 
+    html_dia = onepage_dia.to_html(escape=False)
+    html_ano = onepage_ano.to_html(escape=False)
+
+    corpo_html = f"""
+    <html>
+        <head>
+            <style>
+
+                table {{
+                    border-collapse: collapse;
+                    width: 60%;
+                }}
+
+                th, td {{
+                    border: 1px solid #ddd;
+                    padding: 8px;
+                    text-align: center;
+                }}
+
+                th {{
+                    background-color: #1f4e79;
+                    color: white;
+                }}
+
+                .verde {{
+                    height: 12px;
+                    width: 12px;
+                    background-color: green;
+                    border-radius: 50%;
+                    display: inline-block;
+                }}
+
+                .vermelha {{
+                    height: 12px;
+                    width: 12px;
+                    background-color: red;
+                    border-radius: 50%;
+                    display: inline-block;
+                }}
+
+            </style>
+        </head>
+        <body>
+
+            <h1>OnePage - Loja {id_loja}</h1>
+
+            <p>Resumo de desempenho da loja no dia e no acumulo anual.</p>
+
+            <br><br>
+
+            <h2>Resultado do Dia</h2>
+            {html_dia}
+
+            <br><br>
+
+            <h2>Resultado do Ano</h2>
+            {html_ano}
+
+        </body>
+    </html>
+    """
+
+    return corpo_html
 
 
 def gerar_ranking(df, coluna, df_lojas):
@@ -230,13 +304,73 @@ def gerar_ranking(df, coluna, df_lojas):
 
 def gerar_relatorios(metricas, df_lojas):
 
-    relatorios = {}
+    tabelas_html = ""
 
     for coluna, df in metricas.items():
-        relatorios[coluna] = gerar_ranking(df, coluna, df_lojas)  
+
+        ranking = gerar_ranking(df, coluna, df_lojas)  
+
+        ranking_html = ranking.to_html(index=False, escape=False)
+
+        tabelas_html += f"""
+        <h2>{coluna}</h2>
+        {ranking_html}
+        <br><br>
+        """
+        
+    corpo_html = f"""
+    <html>
+        <head>
+            <style>
+
+                body {{
+                    font-family: Arial, sans-serif;
+                }}
+
+                table {{
+                    border-collapse: collapse;
+                    width: 80%;
+                }}
+
+                th, td {{
+                    border: 1px solid #ddd;
+                    padding: 8px;
+                    text-align: center;
+                }}
+
+                th {{
+                    background-color: #1f4e79;
+                    color: white;
+                }}
+
+                h1 {{
+                    color: #1f4e79;
+                }}
+
+                h2 {{
+                    margin-top: 30px;
+                    color: #333;
+                }}
+
+            </style> 
+        </head>
+        <body>
+
+            <h1>Relatorio - Diretoria</h1>
+
+            <p>Resumo geral de desempenho das lojas.</p>
+
+            <br><br>
+
+            {tabelas_html}
+
+        </body>
+    </html>
+    """
     
-    return relatorios
+    return corpo_html
     
+
 # ========
 # MAIN
 # ========
@@ -330,6 +464,7 @@ def main():
     }
 
     relatorios = gerar_relatorios(metricas, df_lojas)
+
 
     print("Processamento concluído")
 
