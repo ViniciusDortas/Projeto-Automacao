@@ -210,6 +210,10 @@ def gerar_onepage_loja(
     ]       
     }).set_index("Indicador")
 
+    return onepage_dia, onepage_ano
+
+
+def gerar_html_onepage(onepage_dia, onepage_ano, id_loja, data):
 
     def bolinha(valor):
         if valor == "Sim":
@@ -223,6 +227,8 @@ def gerar_onepage_loja(
  
     html_dia = onepage_dia.to_html(escape=False)
     html_ano = onepage_ano.to_html(escape=False)
+
+    data = data.strftime("%d/%m/%Y")
 
     corpo_html = f"""
     <html>
@@ -265,7 +271,7 @@ def gerar_onepage_loja(
         </head>
         <body>
 
-            <h1>OnePage - Loja {id_loja}</h1>
+            <h1>OnePage - Loja {id_loja} - {data}</h1>
 
             <p>Resumo de desempenho da loja no dia e no acumulo anual.</p>
 
@@ -304,11 +310,20 @@ def gerar_ranking(df, coluna, df_lojas):
 
 def gerar_relatorios(metricas, df_lojas):
 
-    tabelas_html = ""
+    relatorios = {}
 
     for coluna, df in metricas.items():
 
-        ranking = gerar_ranking(df, coluna, df_lojas)  
+        relatorios[coluna] = gerar_ranking(df, coluna, df_lojas)  
+
+    return relatorios
+
+
+def gerar_html_relatorios(relatorios, data):
+
+    tabelas_html = ""
+
+    for coluna, ranking in relatorios.items():
 
         ranking_html = ranking.to_html(index=False, escape=False)
 
@@ -317,6 +332,8 @@ def gerar_relatorios(metricas, df_lojas):
         {ranking_html}
         <br><br>
         """
+
+    data = data.strftime("%d-%m-%Y")
         
     corpo_html = f"""
     <html>
@@ -356,7 +373,7 @@ def gerar_relatorios(metricas, df_lojas):
         </head>
         <body>
 
-            <h1>Relatorio - Diretoria</h1>
+            <h1>Relatorio - Diretoria - {data}</h1>
 
             <p>Resumo geral de desempenho das lojas.</p>
 
@@ -367,9 +384,25 @@ def gerar_relatorios(metricas, df_lojas):
         </body>
     </html>
     """
-    
+
     return corpo_html
+
     
+def salvar_dados(onepages, relatorio, data):
+    os.makedirs("Arquivos/OnePages", exist_ok=True)
+
+    data = data.strftime("%d-%m-%Y")
+
+    for id_loja, html in onepages.items():
+        caminho = os.path.join("Arquivos/OnePages", f"OnePage_Loja{id_loja}_{data}.html")
+
+        with open(caminho, "w", encoding="utf-8") as f:
+            f.write(html)
+
+    caminho = os.path.join("Arquivos", f"Relatorio_{data}.html")
+    with open(caminho, "w", encoding="utf-8") as f:
+        f.write(relatorio)
+
 
 # ========
 # MAIN
@@ -442,7 +475,7 @@ def main():
 
     for id_loja in df_emails_lojas["ID Loja"].dropna().unique():
         
-        onepages[id_loja] = gerar_onepage_loja(
+        onepage_dia, onepage_ano = gerar_onepage_loja(
             id_loja,
             faturamento_dia_fil,
             variedade_dia_fil,
@@ -450,6 +483,10 @@ def main():
             faturamento_ano_fil,
             variedade_ano_fil,
             ticket_ano_fil
+        )
+
+        onepages[id_loja] = gerar_html_onepage(
+            onepage_dia, onepage_ano, id_loja, data_mais_recente
         )
 
     # ===== CRIANDO OS RELATORIOS =====
@@ -463,7 +500,12 @@ def main():
         "Ticket Medio Ano": ticket_ano_fil
     }
 
-    relatorios = gerar_relatorios(metricas, df_lojas)
+    rankings = gerar_relatorios(metricas, df_lojas)
+
+    relatorios = gerar_html_relatorios(rankings, data_mais_recente)
+
+
+    salvar_dados(onepages, relatorios, data_mais_recente)
 
 
     print("Processamento concluído")
