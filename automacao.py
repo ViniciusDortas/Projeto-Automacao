@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 import os
+import smtplib
+from email.message import EmailMessage
 
 # ============
 # CONSTANTES
@@ -375,6 +377,96 @@ def salvar_dados(onepages, relatorio, data):
         f.write(relatorio)
 
 
+def enviar_email(destinario, assunto, corpo_html):
+
+    remetente = os.getenv("EMAIL_USER")
+    senha = os.getenv("EMAIL_SENHA")
+
+    if not remetente or not senha:
+        raise EnvironmentError("Variáveis EMAIL_USER ou EMAIL_SENHA não definidos")
+
+    msg = EmailMessage()
+    msg["From"] = remetente
+    msg["To"] = destinario
+    msg["Subject"] = assunto
+    msg.add_alternative(corpo_html, subtype="html")
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+        smtp.login(remetente, senha)
+        smtp.send_message(msg)
+
+
+def enviar_onepages(df_email_lojas, df_lojas, onepages, data):
+
+    data = data.strftime("%d/%m/%Y")
+    
+    mapa_lojas = df_lojas.set_index("ID Loja")["Loja"]
+
+    for _, linha in df_email_lojas.iterrows():
+        id_loja = linha["ID Loja"]
+        gerente = linha["Gerente"]
+        email = linha["Email"]
+
+        if pd.isna(id_loja):
+            continue
+
+        nome_loja = mapa_lojas[id_loja]
+
+        assunto = f"OnePage - {nome_loja} - {data}"
+
+        corpo = f"""
+        <p>Olá {gerente},</p>
+
+        <p>Segue o relátorio de desempenho da loja <strong>{nome_loja}</strong>
+        referente ao dia {data}</p>
+
+        <br>
+
+        {onepages[id_loja]}
+
+        <br>
+
+        <p>Atenciosamente<br>
+        Equipe Comercial</p>
+        """
+
+        enviar_email(email, assunto, corpo)
+
+        print(f"Email enviado para a Loja {id_loja}")
+
+
+def enviar_relatorio_diretoria(df_email_lojas, relatorio, data):
+
+    data = data.strftime("%d/%m/%Y")
+
+    df_diretoria = df_email_lojas[df_email_lojas["ID Loja"].isna()]
+
+    for _, linha in df_diretoria.iterrows():
+    
+        email = linha["Email"]
+
+        assunto = f"Relatório Geral - {data}"
+
+        corpo = f"""
+        <p>Olá Diretoria,</p>
+
+        <p>Segue o relatório geral do dia {data}</p>
+
+        <br>
+
+        {relatorio}
+
+        <br>
+
+        <p>Atenciosamente,<br>
+        Equipe Comercial</p>
+        """
+
+        enviar_email(email, assunto, corpo)
+
+        print("Email enviado para a Diretoria")
+
+
 # ========
 # MAIN
 # ========
@@ -473,10 +565,12 @@ def main():
 
     relatorios = gerar_html_relatorios(rankings, data_mais_recente)
 
-    # ===== SALVANDO OS DADOS
+    # ===== SALVANDO E ENVIANDO OS DADOS =====
 
     salvar_dados(onepages, relatorios, data_mais_recente)
 
+    enviar_onepages(df_emails_lojas, df_lojas, onepages, data_mais_recente)
+    enviar_relatorio_diretoria(df_emails_lojas, relatorios, data_mais_recente)
 
     print("Processamento concluído")
 
