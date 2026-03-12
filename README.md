@@ -1,6 +1,6 @@
-# 📊 Automação de Relatórios e Envio de OnePages
+# Automação de Relatórios e Envio de OnePages
 
-## 📌 Contexto do Projeto
+## Contexto do Projeto
 
 Neste projeto, atuo como integrante da equipe de Análise de Dados de uma empresa fictícia com 25 lojas.
 
@@ -15,7 +15,7 @@ Todo esse processo foi automatizado utilizando Python, eliminando tarefas manuai
 
 ---
 
-## 🚀 Objetivo
+## Objetivo
 
 Automatizar completamente a geração e o envio de relatórios diários, garantindo:
 
@@ -26,17 +26,17 @@ Automatizar completamente a geração e o envio de relatórios diários, garanti
 
 ---
 
-## ⚙️ Funcionalidades
+## Funcionalidades
 
-- 📈 Geração automática de OnePage individual por loja
-- 📊 Geração de relatório geral consolidado da diretoria
-- 📧 Envio automático de e-mails personalizados para cada gerente
-- 🧾 Envio automático do relatório consolidado para a diretoria
-- 🧩 Código organizado em funções reutilizáveis
+- Geração automática de OnePage individual por loja
+- Geração de relatório geral consolidado da diretoria
+- Envio automático de e-mails personalizados para cada gerente
+- Envio automático do relatório consolidado para a diretoria
+- Código organizado em funções reutilizáveis
 
 ---
 
-## 🛠 Tecnologias Utilizadas
+## Tecnologias Utilizadas
 
 - Python
 - Pandas
@@ -46,7 +46,7 @@ Automatizar completamente a geração e o envio de relatórios diários, garanti
 
 ---
 
-## ⏰ Execução Automática
+## Execução Automática
 
 O projeto está configurado para execução diária utilizando o Agendador de Tarefas do Windows (Windows Task Scheduler).
 
@@ -54,7 +54,7 @@ Dessa forma, os relatórios são gerados e enviados automaticamente todos os dia
 
 ---
 
-## 📂 Estrutura do Projeto
+## Estrutura do Projeto
 
 ```
 📁 Bases de Dados/
@@ -72,9 +72,9 @@ Dessa forma, os relatórios são gerados e enviados automaticamente todos os dia
 
 ---
 
-## ▶️ Como Executar o Projeto
+## Como Executar o Projeto
 
-### 1️⃣ Clonar o repositório
+### 1 - Clonar o repositório
 
 ```
 git clone <url-do-repositorio>
@@ -88,7 +88,7 @@ cd nome-do-repositorio
 
 ---
 
-### 2️⃣ Criar ambiente virtual
+### 2 - Criar ambiente virtual
 
 ```
 python -m venv venv
@@ -96,7 +96,7 @@ python -m venv venv
 
 ---
 
-### 3️⃣ Ativar o ambiente
+### 3 - Ativar o ambiente
 
 Windows:
 
@@ -106,7 +106,7 @@ venv\Scripts\activate
 
 ---
 
-### 4️⃣ Instalar dependências
+### 4 - Instalar dependências
 
 ```
 pip install -r requirements.txt
@@ -114,7 +114,7 @@ pip install -r requirements.txt
 
 ---
 
-### 5️⃣ Configurar envio de e-mail
+### 5 - Configurar envio de e-mail
 
 O projeto utiliza SMTP do Gmail.
 
@@ -127,7 +127,7 @@ Para funcionar corretamente:
 
 ---
 
-### 6️⃣ Executar o projeto
+### 6 - Executar o projeto
 
 ```
 python main.py
@@ -137,7 +137,7 @@ Os relatórios serão gerados automaticamente e os e-mails enviados conforme con
 
 ---
 
-## ⚠️ Observações Importantes
+## ! Observações Importantes
 
 - Para testar o projeto, recomenda-se alterar os e-mails presentes na base `Emails.csv` para e-mails próprios.
 - Este projeto possui e-mails configurados apenas para fins de demonstração.
@@ -145,7 +145,7 @@ Os relatórios serão gerados automaticamente e os e-mails enviados conforme con
 
 ---
 
-## 📈 Possíveis Melhorias Futuras
+## Possíveis Melhorias Futuras
 
 - Implementação de logs de envio
 - Tratamento mais robusto de erros
@@ -154,7 +154,7 @@ Os relatórios serão gerados automaticamente e os e-mails enviados conforme con
 
 ---
 
-## 🎯 Conclusão
+## Conclusão
 
 Este projeto demonstra:
 
@@ -165,3 +165,4 @@ Este projeto demonstra:
 - Aplicação prática de Python no contexto empresarial
 
 Projeto desenvolvido para fins de estudo, prática e portfólio.
+
