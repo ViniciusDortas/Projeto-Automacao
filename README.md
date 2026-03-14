@@ -1,5 +1,10 @@
 # Automação de Relatórios e Envio de OnePages
 
+![Python](https://img.shields.io/badge/Python-3.x-blue)
+![Automation](https://img.shields.io/badge/Automation-Report%20Automation-orange)
+![Email](https://img.shields.io/badge/Email-SMTP-green)
+![Status](https://img.shields.io/badge/Status-Concluído-brightgreen)
+
 ## Contexto do Projeto
 
 Neste projeto, atuo como integrante da equipe de Análise de Dados de uma empresa fictícia com 25 lojas.
